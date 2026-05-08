@@ -118,9 +118,8 @@ class AirCanvasProcessor(VideoProcessorBase):
     def _process(self, frame: av.VideoFrame) -> av.VideoFrame:
         self.frame_count += 1
         img = frame.to_ndarray(format="bgr24")
-        img = cv2.resize(img, (FRAME_W, FRAME_H))
+        img = cv2.resize(img, (FRAME_W, FRAME_H), interpolation=cv2.INTER_CUBIC)
         img = cv2.flip(img, 1)
-        img = cv2.GaussianBlur(img, (17, 17), cv2.BORDER_DEFAULT)
 
         if self.clear_requested:
             self.draw_canvas[:] = 0
@@ -222,37 +221,41 @@ with video_col:
 with side_col:
     st.subheader("Controls")
 
-    if ctx.state.playing:
-        st.success("Streaming")
-    elif ctx.state.signalling:
-        st.info("Connecting…")
-    else:
-        st.warning("Click **START** to begin")
+    @st.fragment(run_every=1.0)
+    def render_controls():
+        if ctx.state.playing:
+            st.success("Streaming")
+        elif ctx.state.signalling:
+            st.info("Connecting…")
+        else:
+            st.warning("Click **START** to begin")
 
-    if ctx.video_processor:
-        st.metric("Frames processed", ctx.video_processor.frame_count)
+        if ctx.video_processor:
+            st.metric("Frames processed", ctx.video_processor.frame_count)
 
-        if st.button("Clear canvas", use_container_width=True):
-            ctx.video_processor.clear_requested = True
+            if st.button("Clear canvas", use_container_width=True):
+                ctx.video_processor.clear_requested = True
 
-        if st.button("Prepare capture", use_container_width=True):
-            rgb = ctx.video_processor.latest_canvas_rgb()
-            ok, buf = cv2.imencode(".png", cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
-            if ok:
-                st.session_state["capture_bytes"] = buf.tobytes()
+            if st.button("Prepare capture", use_container_width=True):
+                rgb = ctx.video_processor.latest_canvas_rgb()
+                ok, buf = cv2.imencode(".png", cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
+                if ok:
+                    st.session_state["capture_bytes"] = buf.tobytes()
 
-        if "capture_bytes" in st.session_state:
-            st.download_button(
-                "Download capture.png",
-                data=st.session_state["capture_bytes"],
-                file_name="capture.png",
-                mime="image/png",
-                use_container_width=True,
-            )
+            if "capture_bytes" in st.session_state:
+                st.download_button(
+                    "Download capture.png",
+                    data=st.session_state["capture_bytes"],
+                    file_name="capture.png",
+                    mime="image/png",
+                    use_container_width=True,
+                )
 
-        if ctx.video_processor.last_error:
-            with st.expander("Frame processing error", expanded=True):
-                st.code(ctx.video_processor.last_error)
+            if ctx.video_processor.last_error:
+                with st.expander("Frame processing error", expanded=True):
+                    st.code(ctx.video_processor.last_error)
+
+    render_controls()
 
 with st.expander("Gestures", expanded=False):
     st.markdown(
