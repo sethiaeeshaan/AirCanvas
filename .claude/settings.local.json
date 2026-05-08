@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(pip show *)",
+      "Bash(pip install *)",
+      "Bash(python -c \"import streamlit_app\")",
+      "Bash(python -c \"import streamlit_app; print\\('imports OK'\\)\")",
+      "Bash(streamlit run *)",
+      "Bash(curl -s -o nul -w \"HTTP %{http_code}\\\\n\" http://127.0.0.1:8765/)",
+      "Bash(curl -s \"http://127.0.0.1:8765/_stcore/health\")",
+      "Bash(curl -s \"http://127.0.0.1:8765/\" -H \"Accept: text/html\" -o nul)",
+      "PowerShell(Get-CimInstance *)"
+    ]
+  }
+}
