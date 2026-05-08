@@ -81,11 +81,22 @@ class AirCanvasProcessor(VideoProcessorBase):
         self.xp, self.yp = 0, 0
         self.drawCanvas = np.zeros((FRAME_H, FRAME_W, 3), np.uint8)
         self.clear_requested = False
+        self.last_error = None
+        self.frame_count = 0
 
     def latest_canvas_rgb(self):
         return cv2.cvtColor(self.drawCanvas, cv2.COLOR_BGR2RGB)
 
     def recv(self, frame: av.VideoFrame) -> av.VideoFrame:
+        try:
+            return self._process(frame)
+        except Exception as e:
+            import traceback
+            self.last_error = f"{type(e).__name__}: {e}\n{traceback.format_exc()}"
+            return frame
+
+    def _process(self, frame: av.VideoFrame) -> av.VideoFrame:
+        self.frame_count += 1
         img = frame.to_ndarray(format="bgr24")
         img = cv2.resize(img, (FRAME_W, FRAME_H))
         img = cv2.flip(img, 1)
@@ -181,6 +192,16 @@ ctx = webrtc_streamer(
     media_stream_constraints={"video": True, "audio": False},
     async_processing=True,
 )
+
+if ctx.video_processor:
+    err_placeholder = st.empty()
+    if ctx.video_processor.last_error:
+        err_placeholder.error(
+            f"Frame processing error (frame #{ctx.video_processor.frame_count}):\n\n"
+            f"```\n{ctx.video_processor.last_error}\n```"
+        )
+    else:
+        st.caption(f"Frames processed: {ctx.video_processor.frame_count}")
 
 col1, col2 = st.columns(2)
 
