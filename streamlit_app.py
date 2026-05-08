@@ -177,6 +177,7 @@ class AirCanvasProcessor(VideoProcessorBase):
 
 def get_ice_servers():
     servers = [{"urls": ["stun:stun.l.google.com:19302"]}]
+    has_user_turn = False
     try:
         urls = st.secrets["turn_urls"]
         username = st.secrets["turn_username"]
@@ -186,26 +187,29 @@ def get_ice_servers():
             "username": username,
             "credential": credential,
         })
-        return servers
+        has_user_turn = True
     except (KeyError, FileNotFoundError, st.errors.StreamlitSecretNotFoundError):
-        pass
-    servers.append({
-        "urls": [
-            "turn:openrelay.metered.ca:80",
-            "turn:openrelay.metered.ca:443",
-            "turn:openrelay.metered.ca:443?transport=tcp",
-        ],
-        "username": "openrelayproject",
-        "credential": "openrelayproject",
-    })
-    return servers
+        servers.append({
+            "urls": [
+                "turn:openrelay.metered.ca:80",
+                "turn:openrelay.metered.ca:443",
+                "turn:openrelay.metered.ca:443?transport=tcp",
+            ],
+            "username": "openrelayproject",
+            "credential": "openrelayproject",
+        })
+    return servers, has_user_turn
 
 
 st.set_page_config(page_title="Air Canvas", layout="wide")
 st.title("Air Canvas")
 st.caption("Draw in the air with your index finger. Hand-tracking happens server-side via MediaPipe.")
 
-rtc_config = RTCConfiguration({"iceServers": get_ice_servers(), "iceTransportPolicy": "all"})
+ice_servers, _has_user_turn = get_ice_servers()
+rtc_config = RTCConfiguration({
+    "iceServers": ice_servers,
+    "iceTransportPolicy": "relay" if _has_user_turn else "all",
+})
 
 video_col, side_col = st.columns([3, 1])
 
