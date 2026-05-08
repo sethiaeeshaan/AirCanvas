@@ -4,8 +4,6 @@ import av
 import cv2
 import numpy as np
 import mediapipe as mp
-from mediapipe.python.solutions import hands as mp_hands
-from mediapipe.python.solutions import drawing_utils as mp_drawing
 import streamlit as st
 from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration
 
@@ -17,12 +15,12 @@ class HandDetector:
     def __init__(self, mode=False, maximum_hands=1, complexity=1,
                  detection_confidence=0.85, tracking_confidence=0.85):
         self.results = None
-        self.mpHands = mp_hands
+        self.mpHands = mp.solutions.hands
         self.hands = self.mpHands.Hands(
             mode, maximum_hands, complexity,
             detection_confidence, tracking_confidence,
         )
-        self.mpDraw = mp_drawing
+        self.mpDraw = mp.solutions.drawing_utils
         self.tipIds = [4, 8, 12, 16, 20]
         self.lmList = []
 
